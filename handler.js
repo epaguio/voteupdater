@@ -7,6 +7,8 @@ format.extend(String.prototype, {});
 var s3 = null;
 var isParallel = false;
 var seedValue = 0;
+var prefixListing = "";
+var numTest = 1;
 
 var s3params = {
     bucketName: "elws-dev-apcapdev-use1-objects",
@@ -205,15 +207,36 @@ function processJsonVotes(idx, allFiles, inc, cb) {
             if (jsonObj != null) {
                 var totPrec = parseInt(jsonObj[0].totalPrecincts);
                 var expVote = parseInt(jsonObj[0].expectedVoters);
+                var maxVotePerIteration = Math.floor((expVote*(inc/100))/numTest);
                 var cndIdx = 1;
                 var totVotes = 0;
+                var parentVotes = 0;
+                var nextVoteCnt = 0
 
+                console.log("Votes to divide for all candidate on this iteration: ", maxVotePerIteration)
                 jsonObj[0].candidates.forEach(element => {
-                    element.voteCount = parseInt(element.voteCount) + seedValue + (inc * cndIdx++);
-                    totVotes = totVotes + parseInt(element.voteCount);
-                    console.log("{0}. candidate {1}, votes = {2}".format(idx, element.candidateName, element.voteCount));
+                    if (element.parentID == undefined) {
+                        nextVoteCnt = Math.floor(Math.random() * maxVotePerIteration)
+                        maxVotePerIteration -= nextVoteCnt;
+                        element.voteCount = parseInt(element.voteCount) + nextVoteCnt;
+                        parentVotes = parseInt(element.voteCount);
+                        totVotes = totVotes + parentVotes;
+                        console.log("{0}. candidate {1}, votes = {2}, cumulative total = {3}".format(idx, element.candidateName, element.voteCount, totVotes));
+                    }
+                    else {
+                        element.voteCount = Math.floor(Math.random() * parentVotes);
+                        console.log("{0}. candidate {1}, votes = {2}".format(idx, element.candidateID, element.voteCount));
+                    }
+                    // element.voteCount = parseInt(element.voteCount) + seedValue + (inc * cndIdx++);
+                    
+                    
                 });
-                jsonObj[0].precinctsReporting = Math.round((totVotes / expVote) * totPrec);
+
+                if (totVotes > expVote)
+                    jsonObj[0].precinctsReporting = totPrec;
+                else
+                    jsonObj[0].precinctsReporting = Math.round((totVotes / expVote) * totPrec);
+
                 console.log("{0}. County {1}, precincts reporting = {2}".format(idx, jsonObj[0].countyName, jsonObj[0].precinctsReporting));
                 // console.log("File {0} contains {1} bytes, resulting file -> {2}".format(voteFile, data.length, outFile));
                 saveTextToS3({ bucketName : s3params.bucketName, s3Key: outFile }, JSON.stringify(jsonObj), (e, d) => {
@@ -309,13 +332,18 @@ console.time("Total Time");
 const args = getArgs();
 console.log(args);
 if (args["F"] != undefined) {
-    var prefixListing = args["F"];
+    prefixListing = args["F"];
     var isCleanup = (args["C"] != undefined)? true : false;
     var increments = (args["I"] != undefined)? parseInt(args["I"]) : 1;
     var delayInSecs = (args["D"] != undefined)? parseInt(args["D"]) : 1;
-    var numTest = (args["N"] != undefined)? parseInt(args["N"]) : 1;
+    numTest = (args["N"] != undefined)? parseInt(args["N"]) : 1;
     isParallel = (args["P"] != undefined)? true : false;
     seedValue = (args["S"] != undefined)? parseInt(args["S"]) : 0;
+
+    if (args["E"] != undefined) {
+        var envStr = args["E"].toString();
+        s3params.bucketName = "elws-{0}-apcapdev-use1-objects".format(envStr.toLowerCase());
+    }
 
     if (isCleanup) {
         var filterPattern = args["C"];
