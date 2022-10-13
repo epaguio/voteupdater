@@ -138,7 +138,7 @@ function emptyS3Directory(params, filterPattern, cb) {
           deleteParams.Delete.Objects.push({ Key });
         });
         deletedCount += fList.length;
-        console.log("found {0} items, filtered to delete {1} items..,".format(data.Contents.length, fList.length));
+        console.log("found {0} items, filtered to delete {1} items.., first item: {2}".format(data.Contents.length, fList.length, JSON.stringify(deleteParams.Delete.Objects[0])));
   
         if (fList.length > 0)
           s3.deleteObjects(deleteParams, (derr, ddata) => {
@@ -265,7 +265,9 @@ function processS3Files(filter, inc, delS, numT, cb) {
       }, (err, data) => {
         if (err == null) {
             if (data.Contents.length > 0) {
+                console.log("==============================================");
                 console.log("FOUND {0} files using key {1}, iteration = {2}".format(data.Contents.length, prefixListing, numT));
+                console.log("==============================================");
                 if (isParallel) {
                     for (var i=1; i<=data.Contents.length; i++) {
                         processJsonVotes(i, data.Contents, inc, (o) => {});
@@ -286,7 +288,9 @@ function processS3Files(filter, inc, delS, numT, cb) {
                     });
             }
             else {
+                console.log("==============================================");
                 console.log("First time to update votes, will use zero files...");
+                console.log("==============================================");
                 listObjectFromS3({
                     Bucket: s3params.bucketName,
                     Prefix: prefixListing
