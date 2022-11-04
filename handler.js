@@ -208,7 +208,7 @@ function processJsonVotes(idx, allFiles, inc, cb) {
                 var totPrec = parseInt(jsonObj[0].totalPrecincts);
                 var expVote = parseInt(jsonObj[0].expectedVoters);
                 var maxVotePerIteration = Math.floor((expVote*(inc/100))/numTest);
-                var cndIdx = 1;
+                // var cndIdx = 1;
                 var totVotes = 0;
                 var parentVotes = 0;
                 var nextVoteCnt = 0
@@ -346,9 +346,15 @@ if (args["F"] != undefined) {
 
     if (args["E"] != undefined) {
         var envStr = args["E"].toString();
-        s3params.bucketName = "elws-{0}-apcapdev-use1-objects".format(envStr.toLowerCase());
+        if (args["R"] != undefined) {
+            var regStr = args["R"].toString();
+            s3params.bucketName = "elws-{0}-apcapdev-{1}-objects".format(envStr.toLowerCase(),regStr.toLowerCase());
+        }
+        else
+            s3params.bucketName = "elws-{0}-apcapdev-use1-objects".format(envStr.toLowerCase());
     }
-
+    console.log("Logging output to bucket:", s3params.bucketName);
+    
     if (isCleanup) {
         var filterPattern = args["C"];
         emptyS3Directory({ Bucket: s3params.bucketName, Prefix: prefixListing }, filterPattern, (e,d) => {
