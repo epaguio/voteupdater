@@ -237,9 +237,13 @@ function processJsonVotes(idx, allFiles, inc, cb) {
                 else
                     jsonObj[0].precinctsReporting = Math.round((totVotes / expVote) * totPrec);
 
+                var strPayload = JSON.stringify(jsonObj);
+                // if the increment is 0, then we don't change anything simply save.
+                if (inc == 0)
+                    strPayload = data;
                 console.log("{0}. County {1}, precincts reporting = {2}".format(idx, jsonObj[0].countyName, jsonObj[0].precinctsReporting));
                 // console.log("File {0} contains {1} bytes, resulting file -> {2}".format(voteFile, data.length, outFile));
-                saveTextToS3({ bucketName : s3params.bucketName, s3Key: outFile }, JSON.stringify(jsonObj), (e, d) => {
+                saveTextToS3({ bucketName : s3params.bucketName, s3Key: outFile }, strPayload, (e, d) => {
                     if (e == null) {
                         console.log("{0}. Updated file: {1}".format(idx, outFile));
                     }
