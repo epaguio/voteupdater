@@ -121,7 +121,7 @@ function emptyS3Directory(params, filterPattern, cb) {
   
     if (s3 == null)
       s3 = new AWS.S3();
-    console.log("deleting objects from:", params);
+    console.log("deleted objects total:", params.deletedCount);
   
     s3.listObjectsV2({ Bucket: params.Bucket, Prefix: params.Prefix, ContinuationToken: params.ContinuationToken }, (e, data) => {
       if (e) {
@@ -138,7 +138,7 @@ function emptyS3Directory(params, filterPattern, cb) {
           deleteParams.Delete.Objects.push({ Key });
         });
         deletedCount += fList.length;
-        console.log("found {0} items, filtered to delete {1} items.., first item: {2}".format(data.Contents.length, fList.length, JSON.stringify(deleteParams.Delete.Objects[0])));
+        console.log("found {0} items, filtered to delete {1} items..\nfirst item: {2}\nlast item: {2}".format(data.Contents.length, fList.length, JSON.stringify(deleteParams.Delete.Objects[0]), JSON.stringify(deleteParams.Delete.Objects[deleteParams.Delete.Objects.length - 1])));
   
         if (fList.length > 0)
           s3.deleteObjects(deleteParams, (derr, ddata) => {
@@ -148,7 +148,7 @@ function emptyS3Directory(params, filterPattern, cb) {
               //console.log(data);
               params['ContinuationToken'] = data.NextContinuationToken
               params['deletedCount'] = deletedCount;
-              emptyS3Directory(params, filterPattern, cb);
+              setTimeout(()=>{emptyS3Directory(params, filterPattern, cb);},1);
             }
             else
               cb(null, { deleted: deletedCount });
@@ -157,7 +157,8 @@ function emptyS3Directory(params, filterPattern, cb) {
           //console.log(data);
           params['ContinuationToken'] = data.NextContinuationToken
           params['deletedCount'] = deletedCount;
-          emptyS3Directory(params, filterPattern, cb);
+        //   emptyS3Directory(params, filterPattern, cb);
+          setTimeout(()=>{emptyS3Directory(params, filterPattern, cb);},1);
         }
         else
           cb(null, { deleted: deletedCount });
